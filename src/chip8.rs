@@ -1,7 +1,12 @@
+mod graphic_engine;
 mod opcode;
+pub mod sdl_interface;
 
-use rand::prelude::*;
 use opcode::OpCode;
+use rand::prelude::*;
+use graphic_engine::GraphicEngine;
+use std::rc::Rc;
+use sdl_interface::SdlInterface;
 
 const RAM_SIZE: usize = 4096;
 const REGISTER_SIZE: usize = 16;
@@ -18,6 +23,7 @@ pub struct Chip8 {
     delay_timer: u8,
     sound_timer: u8,
     pc: usize, // program counter
+    g_engine: Rc<dyn GraphicEngine>,
 }
 
 impl Chip8 {
@@ -30,6 +36,7 @@ impl Chip8 {
             delay_timer: 0,
             sound_timer: 0,
             pc: OFFSET_USABLE_MEM,
+            g_engine: Rc::new(SdlInterface::new()),
         }
     }
 
@@ -51,35 +58,34 @@ impl Chip8 {
     }
 
     fn is_key_pressed(key: u8) -> bool {
-        // TODO
-        println!("Checking if key {} is pressed.", key);
-        return false;
+        todo!()
     }
 
     fn get_pressed_key() -> u8 {
-        // TODO
-        0
+        todo!()
     }
 
     fn get_sprite_address(character: u8) -> usize {
-        //TODO
-        println!("Getting address of {}.", character);
-        0
+        todo!()
     }
 
     fn next_operation(&mut self) {
         self.pc += 2;
     }
 
+    fn execute_current_operation(&mut self) {
+        let opcode = self.get_opcode();
+        println!("${:X?}: {:04X?}", self.pc, opcode);
+        self.execute_opcode(opcode);
+    }
+
     pub fn run(&mut self) {
         loop {
-            let opcode = self.get_opcode();
-
-            println!("${:X?}: {:04X?}", self.pc, opcode);
-
-            self.execute_opcode(opcode);
+            self.execute_current_operation();
 
             self.next_operation();
+
+            self.timer_countdown();
         }
     }
 
@@ -88,7 +94,7 @@ impl Chip8 {
             "Reading file '{}'...",
             p.file_name().unwrap().to_str().unwrap()
         );
-        
+
         let data = std::fs::read(p).unwrap();
 
         let mut i = OFFSET_USABLE_MEM;
