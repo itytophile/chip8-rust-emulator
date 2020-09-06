@@ -17,7 +17,6 @@ pub struct Chip8 {
     delay_timer: u8,
     sound_timer: u8,
     pc: usize, // program counter
-
 }
 
 impl Chip8 {
@@ -166,7 +165,7 @@ impl opcode::OpCode for Chip8 {
         self.pc = nnn + self.v[0] as usize;
     }
     fn op23(&mut self, x: usize, nn: u8) {
-        self.v[x] = nn & thread_rng().gen_range(0,255);
+        self.v[x] = nn & thread_rng().gen_range(0, 255);
     }
     fn op24(&mut self, x: usize, y: usize, n: u8) {
         println!("Draw sprite {} {} {}", x, y, n);
@@ -200,15 +199,18 @@ impl opcode::OpCode for Chip8 {
         self.i = Chip8::get_sprite_address(self.v[x]);
     }
     fn op33(&mut self, x: usize) {
+        self.ram[self.i] = self.v[x] / 100;
+        self.ram[self.i + 1] = (self.v[x] / 10) % 10;
+        self.ram[self.i + 2] = self.v[x] % 10;
     }
     fn op34(&mut self, x: usize) {
         for offset in 0..x {
-            self.ram[self.i+offset] = self.v[offset];
+            self.ram[self.i + offset] = self.v[offset];
         }
     }
     fn op35(&mut self, x: usize) {
         for offset in 0..x {
-            self.v[offset] = self.ram[self.i+offset];
+            self.v[offset] = self.ram[self.i + offset];
         }
     }
 }
