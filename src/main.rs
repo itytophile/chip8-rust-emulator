@@ -1,7 +1,10 @@
 mod chip8;
 
 fn main() {
-    let chip = chip8::Chip8::new();
+    let mut chip = chip8::Chip8::new();
+    chip.read(std::path::Path::new(
+        "/home/ityt/Téléchargements/Animal Race [Brian Astle].ch8",
+    ));
 
-    println!("Hello, world!");
+    chip.run();
 }

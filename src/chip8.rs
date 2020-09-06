@@ -1,6 +1,7 @@
 mod opcode;
 
 use rand::prelude::*;
+use opcode::OpCode;
 
 const RAM_SIZE: usize = 4096;
 const REGISTER_SIZE: usize = 16;
@@ -42,7 +43,7 @@ impl Chip8 {
     }
 
     fn get_opcode(&self) -> u16 {
-        (self.ram[self.pc] as u16) << 8 + self.ram[self.pc + 1]
+        ((self.ram[self.pc] as u16) << 8) + self.ram[self.pc + 1] as u16
     }
 
     fn skip_next_instruction(&mut self) {
@@ -65,9 +66,43 @@ impl Chip8 {
         println!("Getting address of {}.", character);
         0
     }
+
+    fn next_operation(&mut self) {
+        self.pc += 2;
+    }
+
+    pub fn run(&mut self) {
+        loop {
+            let opcode = self.get_opcode();
+
+            println!("${:X?}: {:04X?}", self.pc, opcode);
+
+            self.execute_opcode(opcode);
+
+            self.next_operation();
+        }
+    }
+
+    pub fn read(&mut self, p: &std::path::Path) {
+        println!(
+            "Reading file '{}'...",
+            p.file_name().unwrap().to_str().unwrap()
+        );
+        
+        let data = std::fs::read(p).unwrap();
+
+        let mut i = OFFSET_USABLE_MEM;
+
+        for byte in data {
+            self.ram[i] = byte;
+            i += 1;
+        }
+
+        println!("Done! {} bytes read.", i - OFFSET_USABLE_MEM);
+    }
 }
 
-impl opcode::OpCode for Chip8 {
+impl OpCode for Chip8 {
     fn op2(&mut self) {
         panic!("Opcode 00E0 not implemented!");
     }
