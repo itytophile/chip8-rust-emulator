@@ -1,6 +1,3 @@
-use std::io;
-use io::{Read, Write};
-
 pub trait OpCode {
     fn execute_opcode(&mut self, opcode: u16) {
         let last_hex = (opcode & 0xF000) >> (3 * 4);
@@ -12,55 +9,55 @@ pub trait OpCode {
         let nnn = (opcode & 0x0FFF) as usize;
 
         if opcode == 0x00E0 {
-            self.op2()
-        }
-        if opcode == 0x0EE {
-            self.op3()
-        }
-        match last_hex {
-            0x0 => self.op1(),
-            0x1 => self.op4(nnn),
-            0x2 => self.op5(nnn),
-            0x3 => self.op6(x, nn),
-            0x4 => self.op7(x, nn),
-            0x5 => self.op8(x, y),
-            0x6 => self.op9(x, nn),
-            0x7 => self.op10(x, nn),
-            0x8 => match opcode & 0x000F {
-                0x0 => self.op11(x, y),
-                0x1 => self.op12(x, y),
-                0x2 => self.op13(x, y),
-                0x3 => self.op14(x, y),
-                0x4 => self.op15(x, y),
-                0x5 => self.op16(x, y),
-                0x6 => self.op17(x),
-                0x7 => self.op18(x, y),
-                0xE => self.op19(x),
+            self.op2();
+        } else if opcode == 0x00EE {
+            self.op3();
+        } else {
+            match last_hex {
+                0x0 => self.op1(),
+                0x1 => self.op4(nnn),
+                0x2 => self.op5(nnn),
+                0x3 => self.op6(x, nn),
+                0x4 => self.op7(x, nn),
+                0x5 => self.op8(x, y),
+                0x6 => self.op9(x, nn),
+                0x7 => self.op10(x, nn),
+                0x8 => match opcode & 0x000F {
+                    0x0 => self.op11(x, y),
+                    0x1 => self.op12(x, y),
+                    0x2 => self.op13(x, y),
+                    0x3 => self.op14(x, y),
+                    0x4 => self.op15(x, y),
+                    0x5 => self.op16(x, y),
+                    0x6 => self.op17(x),
+                    0x7 => self.op18(x, y),
+                    0xE => self.op19(x),
+                    _ => panic!("Unknown opcode provided! {:X?}", opcode),
+                },
+                0x9 => self.op20(x, y),
+                0xA => self.op21(nnn),
+                0xB => self.op22(nnn),
+                0xC => self.op23(x, nn),
+                0xD => self.op24(x, y, n),
+                0xE => match opcode & 0x00FF {
+                    0x9E => self.op25(x),
+                    0xA1 => self.op26(x),
+                    _ => panic!("Unknown opcode provided! {:X?}", opcode),
+                },
+                0xF => match opcode & 0x00FF {
+                    0x07 => self.op27(x),
+                    0x0A => self.op28(x),
+                    0x15 => self.op29(x),
+                    0x18 => self.op30(x),
+                    0x1E => self.op31(x),
+                    0x29 => self.op32(x),
+                    0x33 => self.op33(x),
+                    0x55 => self.op34(x),
+                    0x65 => self.op35(x),
+                    _ => panic!("Unknown opcode provided! {:X?}", opcode),
+                },
                 _ => panic!("Unknown opcode provided! {:X?}", opcode),
-            },
-            0x9 => self.op20(x, y),
-            0xA => self.op21(nnn),
-            0xB => self.op22(nnn),
-            0xC => self.op23(x, nn),
-            0xD => self.op24(x, y, n),
-            0xE => match opcode & 0x00FF {
-                0x9E => self.op25(x),
-                0xA1 => self.op26(x),
-                _ => panic!("Unknown opcode provided! {:X?}", opcode),
-            },
-            0xF => match opcode & 0x00FF {
-                0x07 => self.op27(x),
-                0x0A => self.op28(x),
-                0x15 => self.op29(x),
-                0x18 => self.op30(x),
-                0x1E => self.op31(x),
-                0x29 => self.op32(x),
-                0x33 => self.op33(x),
-                0x55 => self.op34(x),
-                0x65 => self.op35(x),
-                _ => panic!("Unknown opcode provided! {:X?}", opcode),
-            },
-            _ => panic!("Unknown opcode provided! {:X?}", opcode),
+            }
         }
     }
     /// Calls machine code routine (RCA 1802 for COSMAC VIP) at address NNN.
@@ -69,17 +66,7 @@ pub trait OpCode {
     /// # Arguments
     ///
     /// * `opcode` - Opcode 0NNN
-    fn op1(&mut self) {
-        let mut stdin = io::stdin();
-        let mut stdout = io::stdout();
-
-        // We want the cursor to stay at the end of the line, so we print without a newline and flush manually.
-        write!(stdout, "0NNN not supported, press any key to ignore...").unwrap();
-        stdout.flush().unwrap();
-
-        // Read a single byte and discard
-        stdin.read(&mut [0u8]).unwrap();
-    }
+    fn op1(&mut self);
     /// Clears the screen.
     ///
     /// # Arguments

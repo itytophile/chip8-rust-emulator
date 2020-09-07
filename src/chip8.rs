@@ -6,7 +6,7 @@ use graphic_engine::GraphicEngine;
 use opcode::OpCode;
 use rand::prelude::*;
 use sdl_interface::SdlInterface;
-use std::{rc::Rc, time::Duration};
+use std::time::Duration;
 
 const RAM_SIZE: usize = 4096;
 const REGISTER_SIZE: usize = 16;
@@ -14,6 +14,7 @@ const STACK_SIZE: usize = 16;
 const OFFSET_USABLE_MEM: usize = 0x200;
 pub const SCREEN_WIDTH: u32 = 64;
 pub const SCREEN_HEIGHT: u32 = 32;
+const FRAMERATE: u32 = 60;
 
 pub struct Chip8 {
     ram: [u8; RAM_SIZE],
@@ -23,7 +24,10 @@ pub struct Chip8 {
     delay_timer: u8,
     sound_timer: u8,
     pc: usize, // program counter
+    old_pc: usize,
+    is_pc_blocked: bool,
     g_engine: Box<dyn GraphicEngine>,
+    is_on: bool,
 }
 
 impl Chip8 {
@@ -36,7 +40,10 @@ impl Chip8 {
             delay_timer: 0,
             sound_timer: 0,
             pc: OFFSET_USABLE_MEM,
+            old_pc: 0,
+            is_pc_blocked: false,
             g_engine: Box::new(SdlInterface::new()),
+            is_on: true,
         }
     }
 
@@ -70,7 +77,15 @@ impl Chip8 {
     }
 
     fn next_operation(&mut self) {
-        self.pc += 2;
+        if self.is_pc_blocked {
+            self.is_pc_blocked = false;
+        } else {
+            self.pc += 2;
+        }
+    }
+
+    fn block_pc(&mut self) {
+        self.is_pc_blocked = true;
     }
 
     fn execute_current_operation(&mut self) {
@@ -80,16 +95,30 @@ impl Chip8 {
     }
 
     pub fn run(&mut self) {
+        self.g_engine.init_draw();
+
+        let mut framerate = FRAMERATE;
+
         while self.g_engine.is_running() {
-            self.execute_current_operation();
+            if self.is_on {
+                self.old_pc = self.pc;
+                self.execute_current_operation();
+                self.next_operation();
 
-            self.next_operation();
+                // infinite loop detection
+                if self.old_pc == self.pc {
+                    println!("Infinite loop detected, stopping execution!");
+                    self.is_on = false;
+                }
 
-            self.timer_countdown();
+                self.timer_countdown();
+            } else {
+                framerate = 5;
+            }
 
             self.g_engine.draw();
 
-            std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
+            std::thread::sleep(Duration::new(0, 1_000_000_000u32 / framerate));
         }
     }
 
@@ -113,8 +142,12 @@ impl Chip8 {
 }
 
 impl OpCode for Chip8 {
+    fn op1(&mut self) {
+        println!("Opcode 0NNN, shutting down...");
+        self.is_on = false;
+    }
     fn op2(&mut self) {
-        panic!("Opcode 00E0 not implemented!");
+        self.g_engine.clear_screen();
     }
     fn op3(&mut self) {
         let option = self.stack.pop();
@@ -125,6 +158,7 @@ impl OpCode for Chip8 {
     }
     fn op4(&mut self, nnn: usize) {
         self.pc = nnn;
+        self.block_pc();
     }
     fn op5(&mut self, nnn: usize) {
         self.stack.push(self.pc);
@@ -149,7 +183,8 @@ impl OpCode for Chip8 {
         self.v[x] = nn;
     }
     fn op10(&mut self, x: usize, nn: u8) {
-        self.v[x] += nn;
+        // I use this strange operation to simulate a overflow
+        self.v[x] = ((self.v[x] as u16 + nn as u16) % 0xFF) as u8;
     }
     fn op11(&mut self, x: usize, y: usize) {
         self.v[x] = self.v[y];
@@ -170,16 +205,16 @@ impl OpCode for Chip8 {
             self.v[0xF] = 0;
         }
 
-        self.v[x] += self.v[y];
+        self.v[x] = ((self.v[x] as u16 + self.v[y] as u16) % 0xFF) as u8;
     }
     fn op16(&mut self, x: usize, y: usize) {
         if self.v[x] < self.v[y] {
             self.v[0xF] = 0;
+            self.v[x] += 0xFF - self.v[y]; // overflow simulation
         } else {
             self.v[0xF] = 1;
+            self.v[x] -= self.v[y];
         }
-
-        self.v[x] -= self.v[y];
     }
     fn op17(&mut self, x: usize) {
         self.v[0xF] = self.v[x] & 0b1;
@@ -208,6 +243,7 @@ impl OpCode for Chip8 {
     }
     fn op22(&mut self, nnn: usize) {
         self.pc = nnn + self.v[0] as usize;
+        self.block_pc();
     }
     fn op23(&mut self, x: usize, nn: u8) {
         self.v[x] = nn & thread_rng().gen_range(0, 255);
@@ -216,7 +252,7 @@ impl OpCode for Chip8 {
         self.g_engine.draw_sprite(
             self.v[x],
             self.v[y],
-            &self.ram[self.i..self.i + n as usize - 1],
+            &self.ram[self.i..self.i + 1 + n as usize],
         );
     }
     fn op25(&mut self, x: usize) {
