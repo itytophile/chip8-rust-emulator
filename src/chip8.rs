@@ -2,18 +2,18 @@ mod graphic_engine;
 mod opcode;
 pub mod sdl_interface;
 
+use graphic_engine::GraphicEngine;
 use opcode::OpCode;
 use rand::prelude::*;
-use graphic_engine::GraphicEngine;
-use std::rc::Rc;
 use sdl_interface::SdlInterface;
+use std::{rc::Rc, time::Duration};
 
 const RAM_SIZE: usize = 4096;
 const REGISTER_SIZE: usize = 16;
 const STACK_SIZE: usize = 16;
 const OFFSET_USABLE_MEM: usize = 0x200;
-const SCREEN_WIDTH: u32 = 64;
-const SCREEN_HEIGHT: u32 = 32;
+pub const SCREEN_WIDTH: u32 = 64;
+pub const SCREEN_HEIGHT: u32 = 32;
 
 pub struct Chip8 {
     ram: [u8; RAM_SIZE],
@@ -23,7 +23,7 @@ pub struct Chip8 {
     delay_timer: u8,
     sound_timer: u8,
     pc: usize, // program counter
-    g_engine: Rc<dyn GraphicEngine>,
+    g_engine: Box<dyn GraphicEngine>,
 }
 
 impl Chip8 {
@@ -36,7 +36,7 @@ impl Chip8 {
             delay_timer: 0,
             sound_timer: 0,
             pc: OFFSET_USABLE_MEM,
-            g_engine: Rc::new(SdlInterface::new()),
+            g_engine: Box::new(SdlInterface::new()),
         }
     }
 
@@ -80,12 +80,16 @@ impl Chip8 {
     }
 
     pub fn run(&mut self) {
-        loop {
+        while self.g_engine.is_running() {
             self.execute_current_operation();
 
             self.next_operation();
 
             self.timer_countdown();
+
+            self.g_engine.draw();
+
+            std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
         }
     }
 
@@ -209,7 +213,11 @@ impl OpCode for Chip8 {
         self.v[x] = nn & thread_rng().gen_range(0, 255);
     }
     fn op24(&mut self, x: usize, y: usize, n: u8) {
-        println!("Draw sprite {} {} {}", x, y, n);
+        self.g_engine.draw_sprite(
+            self.v[x],
+            self.v[y],
+            &self.ram[self.i..self.i + n as usize - 1],
+        );
     }
     fn op25(&mut self, x: usize) {
         if Chip8::is_key_pressed(self.v[x]) {

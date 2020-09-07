@@ -1,3 +1,6 @@
+use std::io;
+use io::{Read, Write};
+
 pub trait OpCode {
     fn execute_opcode(&mut self, opcode: u16) {
         let last_hex = (opcode & 0xF000) >> (3 * 4);
@@ -67,7 +70,15 @@ pub trait OpCode {
     ///
     /// * `opcode` - Opcode 0NNN
     fn op1(&mut self) {
-        panic!("Opcode 0NNN not implemented!");
+        let mut stdin = io::stdin();
+        let mut stdout = io::stdout();
+
+        // We want the cursor to stay at the end of the line, so we print without a newline and flush manually.
+        write!(stdout, "0NNN not supported, press any key to ignore...").unwrap();
+        stdout.flush().unwrap();
+
+        // Read a single byte and discard
+        stdin.read(&mut [0u8]).unwrap();
     }
     /// Clears the screen.
     ///
