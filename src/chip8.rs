@@ -16,7 +16,7 @@ const STACK_SIZE: usize = 16;
 const OFFSET_USABLE_MEM: usize = 0x200;
 pub const SCREEN_WIDTH: u32 = 64;
 pub const SCREEN_HEIGHT: u32 = 32;
-const FREQUENCY: u32 = 10;
+const FREQUENCY: u32 = 60;
 
 pub struct Chip8 {
     ram: [u8; RAM_SIZE],
@@ -100,7 +100,7 @@ impl Chip8 {
     pub fn run(&mut self) {
         self.g_engine.init_draw();
 
-        let mut framerate = FREQUENCY;
+        let mut frequency = FREQUENCY;
 
         while self.g_engine.is_running() {
             if self.is_on {
@@ -116,12 +116,12 @@ impl Chip8 {
 
                 self.timer_countdown();
             } else {
-                framerate = 5;
+                frequency = 5;
             }
 
             self.g_engine.flush();
 
-            std::thread::sleep(Duration::new(0, 1_000_000_000u32 / framerate));
+            std::thread::sleep(Duration::new(0, 1_000_000_000u32 / frequency));
         }
     }
 
