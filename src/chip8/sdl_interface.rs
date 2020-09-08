@@ -68,7 +68,7 @@ impl GraphicEngine for SdlInterface {
         false
     }
 
-    fn draw(&mut self) {
+    fn flush(&mut self) {
         for event in self.event_pump.poll_iter() {
             match event {
                 Event::Quit { .. }

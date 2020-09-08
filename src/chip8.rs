@@ -1,11 +1,13 @@
 mod graphic_engine;
 mod opcode;
 pub mod sdl_interface;
+pub mod piston_interface;
 
 use graphic_engine::GraphicEngine;
 use opcode::OpCode;
 use rand::prelude::*;
 use sdl_interface::SdlInterface;
+use piston_interface::PistonInterface;
 use std::time::Duration;
 
 const RAM_SIZE: usize = 4096;
@@ -14,7 +16,7 @@ const STACK_SIZE: usize = 16;
 const OFFSET_USABLE_MEM: usize = 0x200;
 pub const SCREEN_WIDTH: u32 = 64;
 pub const SCREEN_HEIGHT: u32 = 32;
-const FRAMERATE: u32 = 60;
+const FREQUENCY: u32 = 10;
 
 pub struct Chip8 {
     ram: [u8; RAM_SIZE],
@@ -42,7 +44,8 @@ impl Chip8 {
             pc: OFFSET_USABLE_MEM,
             old_pc: 0,
             is_pc_blocked: false,
-            g_engine: Box::new(SdlInterface::new()),
+            // g_engine: Box::new(SdlInterface::new()),
+            g_engine: Box::new(PistonInterface::new()),
             is_on: true,
         }
     }
@@ -97,7 +100,7 @@ impl Chip8 {
     pub fn run(&mut self) {
         self.g_engine.init_draw();
 
-        let mut framerate = FRAMERATE;
+        let mut framerate = FREQUENCY;
 
         while self.g_engine.is_running() {
             if self.is_on {
@@ -116,7 +119,7 @@ impl Chip8 {
                 framerate = 5;
             }
 
-            self.g_engine.draw();
+            self.g_engine.flush();
 
             std::thread::sleep(Duration::new(0, 1_000_000_000u32 / framerate));
         }
