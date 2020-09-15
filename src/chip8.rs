@@ -1,13 +1,15 @@
 mod graphic_engine;
 mod opcode;
-pub mod sdl_interface;
+//pub mod sdl_interface;
 pub mod piston_interface;
+pub mod vulkano_interface;
 
 use graphic_engine::GraphicEngine;
 use opcode::OpCode;
 use rand::prelude::*;
-use sdl_interface::SdlInterface;
+//use sdl_interface::SdlInterface;
 use piston_interface::PistonInterface;
+use vulkano_interface::VulkanoInterface;
 use std::time::Duration;
 
 const RAM_SIZE: usize = 4096;
@@ -45,7 +47,8 @@ impl Chip8 {
             old_pc: 0,
             is_pc_blocked: false,
             // g_engine: Box::new(SdlInterface::new()),
-            g_engine: Box::new(PistonInterface::new()),
+            // g_engine: Box::new(PistonInterface::new()),
+            g_engine: Box::new(VulkanoInterface::new()),
             is_on: true,
         }
     }
@@ -98,7 +101,7 @@ impl Chip8 {
     }
 
     pub fn run(&mut self) {
-        self.g_engine.init_draw();
+        self.g_engine.init();
 
         let mut frequency = FREQUENCY;
 
@@ -186,7 +189,7 @@ impl OpCode for Chip8 {
         self.v[x] = nn;
     }
     fn op10(&mut self, x: usize, nn: u8) {
-        // I use this strange operation to simulate a overflow
+        // I use this strange operation to simulate an overflow
         self.v[x] = ((self.v[x] as u16 + nn as u16) % 0xFF) as u8;
     }
     fn op11(&mut self, x: usize, y: usize) {

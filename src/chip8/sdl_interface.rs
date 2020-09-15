@@ -89,7 +89,7 @@ impl GraphicEngine for SdlInterface {
         self.is_running
     }
 
-    fn init_draw(&mut self) {
+    fn init(&mut self) {
         self.canvas.set_draw_color(Color::RGB(0, 0, 0));
         self.canvas.clear();
     }

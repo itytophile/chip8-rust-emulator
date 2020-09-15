@@ -89,7 +89,7 @@ impl GraphicEngine for PistonInterface {
         *self.is_running.lock().unwrap()
     }
 
-    fn init_draw(&mut self) {
+    fn init(&mut self) {
         let is_running = Arc::clone(&self.is_running);
         let task_data_queue = Arc::clone(&self.task_data_queue);
 

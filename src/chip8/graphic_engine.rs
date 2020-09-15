@@ -7,5 +7,5 @@ pub trait GraphicEngine {
     fn draw_sprite(&mut self, x: u8, y: u8, sprite_bytes: &[u8]) -> bool;
     fn flush(&mut self);
     fn is_running(&self) -> bool;
-    fn init_draw(&mut self);
+    fn init(&mut self);
 }
